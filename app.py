@@ -9,84 +9,107 @@ st.set_page_config(
     layout="wide"
 )
 
-# ================= PREMIUM UI CSS =================
-st.markdown("""
+# ================= THEME STATE MANAGEMENT =================
+if 'theme' not in st.session_state:
+    st.session_state.theme = 'dark'
+
+def toggle_theme():
+    st.session_state.theme = 'light' if st.session_state.theme == 'dark' else 'dark'
+
+# ================= DYNAMIC PREMIUM UI CSS =================
+if st.session_state.theme == 'dark':
+    bg_gradient = "radial-gradient(circle at 20% 30%, #161a25 0%, #0b0d13 100%)"
+    card_bg = "rgba(255, 255, 255, 0.03)"
+    card_border = "rgba(255, 255, 255, 0.1)"
+    text_main = "#ffffff"
+    text_sub = "#94a3b8"
+    metric_bg = "rgba(255, 255, 255, 0.05)"
+    shadow = "0 8px 32px 0 rgba(0, 0, 0, 0.8)"
+else:
+    bg_gradient = "radial-gradient(circle at 20% 30%, #f0f2f6 0%, #dfe3ee 100%)"
+    card_bg = "rgba(255, 255, 255, 0.7)"
+    card_border = "rgba(0, 0, 0, 0.1)"
+    text_main = "#1e293b"
+    text_sub = "#64748b"
+    metric_bg = "rgba(0, 0, 0, 0.03)"
+    shadow = "0 8px 32px 0 rgba(31, 38, 135, 0.1)"
+
+st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
 
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-    }
-    
-    .stApp {
-        background: radial-gradient(circle at 20% 30%, #161a25 0%, #0b0d13 100%);
-    }
+    .stApp {{
+        background: {bg_gradient};
+        transition: all 0.5s ease;
+    }}
 
-    .premium-card {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+    .premium-card {{
+        background: {card_bg};
+        border: 1px solid {card_border};
         border-radius: 20px;
         padding: 1.5rem;
         backdrop-filter: blur(15px);
         margin-bottom: 1rem;
-    }
+        box-shadow: {shadow};
+        color: {text_main};
+    }}
 
-    .metric-container {
+    .metric-container {{
         text-align: center;
         padding: 1rem;
         border-radius: 15px;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
-    }
+        background: {metric_bg};
+        border: 1px solid {card_border};
+    }}
     
-    .metric-value {
+    .metric-value {{
         font-size: 1.8rem;
         font-weight: 800;
         color: #00e5ff;
-    }
+    }}
     
-    .metric-label {
-        color: #94a3b8;
+    .metric-label {{
+        color: {text_sub};
         font-size: 0.7rem;
         text-transform: uppercase;
         letter-spacing: 1px;
-    }
+    }}
 
-    .main-title {
-        background: linear-gradient(90deg, #ffffff, #94a3b8);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+    .main-title {{
+        color: {text_main};
         font-size: 3rem;
         font-weight: 800;
         margin-bottom: 0;
-    }
+    }}
 
-    /* Custom CSS Progress Bar */
-    .progress-loader {
+    .progress-loader {{
         width: 100%;
-        background: rgba(255,255,255,0.1);
+        background: {metric_bg};
         border-radius: 10px;
         height: 12px;
         margin: 10px 0;
-    }
-    .progress-fill {
-        height: 12px;
-        border-radius: 10px;
-        transition: width 0.5s ease-in-out;
-    }
+    }}
+    
+    /* Smooth transition for theme switching */
+    * {{ transition: background-color 0.5s ease, color 0.5s ease; }}
 </style>
 """, unsafe_allow_html=True)
 
 # ================= SIDEBAR =================
 with st.sidebar:
-    st.markdown("## ⚙️ Control Center")
-    threshold = st.slider("Risk Sensitivity", 0.1, 0.9, 0.6)
+    st.markdown("## ⚙️ Settings")
+    
+    # Theme Toggle Button
+    theme_label = "🌙 Dark Mode" if st.session_state.theme == 'light' else "☀️ Light Mode"
+    st.button(theme_label, on_click=toggle_theme, use_container_width=True)
+    
     st.markdown("---")
-    st.info("System Status: Operational")
+    threshold = st.slider("Risk Sensitivity", 0.1, 0.9, 0.6)
+    st.info(f"Theme: {st.session_state.theme.capitalize()}")
 
 # ================= HEADER =================
-st.markdown("<h1 class='main-title'>SENTINEL <span style='color:#00e5ff'>AI</span></h1>", unsafe_allow_html=True)
-st.markdown("<p style='color:#64748b; margin-top:-10px;'>High-Performance Fraud Interception</p>", unsafe_allow_html=True)
+st.markdown(f"<h1 class='main-title'>SENTINEL <span style='color:#00e5ff'>AI</span></h1>", unsafe_allow_html=True)
+st.markdown(f"<p style='color:{text_sub}; margin-top:-10px;'>Enterprise Fraud Monitoring • 2026 Edition</p>", unsafe_allow_html=True)
 
 # ================= TOP METRICS =================
 m1, m2, m3, m4 = st.columns(4)
@@ -112,24 +135,24 @@ with c2:
 with c3:
     ttype = st.selectbox("Type", ["Online", "POS", "Wire Transfer"])
 
-# Logic (Plotly-free Risk Calculation)
+# Risk Logic
 loc_map = {"Domestic": 0.1, "International (Safe)": 0.3, "International (High Risk)": 0.8}
 type_map = {"Online": 0.2, "POS": 0.1, "Wire Transfer": 0.6}
 risk_score = min(((amount/5000) * 0.4) + loc_map[location] + type_map[ttype], 1.0)
 
-# Visual Gauge Replacement (CSS Progress Bar)
+# CSS Progress Bar
 bar_color = "#ff4b4b" if risk_score >= threshold else "#00e5ff"
 st.markdown(f"""
     <div style="margin-top:20px;">
-        <span style="color:#94a3b8; font-size:0.9rem;">Calculated Risk Index: <b>{risk_score*100:.1f}%</b></span>
+        <span style="color:{text_sub}; font-size:0.9rem;">Calculated Risk Index: <b>{risk_score*100:.1f}%</b></span>
         <div class="progress-loader">
-            <div class="progress-fill" style="width: {risk_score*100}%; background: {bar_color}; shadow: 0 0 10px {bar_color};"></div>
+            <div style="height: 12px; border-radius: 10px; width: {risk_score*100}%; background: {bar_color};"></div>
         </div>
     </div>
 """, unsafe_allow_html=True)
 
 if risk_score >= threshold:
-    st.error(f"🚨 CRITICAL ALERT: FRAUD PROBABILITY {risk_score*100:.1f}%")
+    st.error(f"🚨 ALERT: FRAUD PROBABILITY {risk_score*100:.1f}%")
 else:
     st.success(f"✅ SECURE: TRANSACTION VERIFIED")
 
