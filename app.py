@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import pickle
-from sklearn.metrics import confusion_matrix, classification_report, roc_auc_score
 
 # ================= PAGE CONFIG =================
 st.set_page_config(
@@ -11,7 +10,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# ================= HIGH-END CSS =================
+# ================= PREMIUM CSS =================
 st.markdown("""
 <style>
 body {
@@ -48,14 +47,13 @@ body {
 
 # ================= HEADER =================
 st.markdown("<div class='main-title'>💳 Credit Card Fraud Detection</div>", unsafe_allow_html=True)
-st.markdown("<div class='subtitle'>Enterprise-Grade ML Fraud Detection Dashboard</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Production-Grade Fraud Detection System</div>", unsafe_allow_html=True)
 
 # ================= SIDEBAR =================
 st.sidebar.title("⚙️ Control Panel")
 threshold = st.sidebar.slider("Fraud Threshold", 0.1, 0.9, 0.5)
-upload = st.sidebar.file_uploader("📂 Upload CSV Dataset", type=["csv"])
 
-# ================= LOAD MODEL =================
+# ================= LOAD PKL MODEL =================
 @st.cache_resource
 def load_model():
     with open("fast_fraud_model.pkl", "rb") as f:
@@ -63,68 +61,27 @@ def load_model():
 
 model = load_model()
 
-# ================= DATASET =================
-if upload:
-    data = pd.read_csv(upload)
-else:
-    np.random.seed(42)
-    data = pd.DataFrame({
-        "Amount": np.random.uniform(1, 5000, 2000),
-        "Time": np.random.uniform(0, 60000, 2000),
-        "Transaction_Type": np.random.randint(0, 6, 2000),
-        "Fraud": np.random.randint(0, 2, 2000)
-    })
+# ================= DASHBOARD DATA =================
+np.random.seed(42)
+data = pd.DataFrame({
+    "Amount": np.random.uniform(1, 5000, 1000),
+    "Time": np.random.uniform(0, 60000, 1000),
+    "Transaction_Type": np.random.randint(0, 6, 1000)
+})
 
-# ================= DASHBOARD =================
-col1, col2 = st.columns([1.4, 1])
+# ================= METRICS =================
+col1, col2, col3 = st.columns(3)
+col1.markdown("<div class='metric'>Transactions<br>1000</div>", unsafe_allow_html=True)
+col2.markdown("<div class='metric'>Model<br>Pretrained</div>", unsafe_allow_html=True)
+col3.markdown("<div class='metric'>Threshold<br>{}</div>".format(threshold), unsafe_allow_html=True)
 
-with col1:
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.subheader("📊 Dataset Preview")
-    st.dataframe(data.head(10), use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-with col2:
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.subheader("📈 Key Metrics")
-
-    total = len(data)
-    fraud = data["Fraud"].sum()
-    legit = total - fraud
-
-    m1, m2, m3 = st.columns(3)
-    m1.markdown(f"<div class='metric'>Total<br>{total}</div>", unsafe_allow_html=True)
-    m2.markdown(f"<div class='metric'>Fraud<br>{fraud}</div>", unsafe_allow_html=True)
-    m3.markdown(f"<div class='metric'>Legit<br>{legit}</div>", unsafe_allow_html=True)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# ================= MODEL EVALUATION =================
-st.markdown("---")
+# ================= DATA PREVIEW =================
 st.markdown("<div class='card'>", unsafe_allow_html=True)
-st.subheader("🤖 Model Evaluation")
-
-X = data.drop("Fraud", axis=1)
-y = data["Fraud"]
-
-probs = model.predict_proba(X)[:, 1]
-y_pred = (probs >= threshold).astype(int)
-
-st.code(classification_report(y, y_pred))
-
-cm = confusion_matrix(y, y_pred)
-st.subheader("Confusion Matrix")
-st.dataframe(pd.DataFrame(cm, 
-    columns=["Predicted Legit", "Predicted Fraud"],
-    index=["Actual Legit", "Actual Fraud"]
-))
-
-auc_score = roc_auc_score(y, probs)
-st.metric("ROC AUC Score", f"{auc_score:.3f}")
-
+st.subheader("📊 Sample Transactions")
+st.dataframe(data.head(10), use_container_width=True)
 st.markdown("</div>", unsafe_allow_html=True)
 
-# ================= LIVE PREDICTION =================
+# ================= LIVE FRAUD PREDICTION =================
 st.markdown("---")
 st.markdown("<div class='card'>", unsafe_allow_html=True)
 st.subheader("🔍 Live Transaction Fraud Check")
@@ -135,15 +92,15 @@ time = c2.number_input("Time")
 ttype = c3.selectbox("Transaction Type", [0,1,2,3,4,5])
 
 sample = np.array([[amount, time, ttype]])
-risk = model.predict_proba(sample)[0][1]
+risk = float(model.predict_proba(sample)[0][1])
 
 if risk >= threshold:
-    st.error(f"🚨 FRAUD DETECTED — Risk Score: {risk:.2f}")
+    st.error(f"🚨 FRAUD DETECTED\n\nRisk Score: {risk:.2f}")
 else:
-    st.success(f"✅ Legit Transaction — Risk Score: {risk:.2f}")
+    st.success(f"✅ LEGIT TRANSACTION\n\nRisk Score: {risk:.2f}")
 
 st.markdown("</div>", unsafe_allow_html=True)
 
 # ================= FOOTER =================
 st.markdown("---")
-st.markdown("<center style='color:#aaa'>🚀 Streamlit • Credit Card Fraud Detection System</center>", unsafe_allow_html=True)
+st.markdown("<center style='color:#aaa'>🚀 Credit Card Fraud Detection • Streamlit</center>", unsafe_allow_html=True)
